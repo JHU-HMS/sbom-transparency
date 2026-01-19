@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<body>
+  <!-- 加载旧版 PDF.js -->
+  <script src="node_modules/pdfjs-dist/build/pdf.js"></script>
+
+  <script>
+    // 关闭 worker，演示用：这样浏览器不会再请求 pdf.worker.js
+    pdfjsLib.disableWorker = true;
+
+    // ★ 关键：明确允许 PDF 内嵌 JavaScript
+    pdfjsLib.getDocument({ url: 'cve.pdf', disableJavaScript: false })
+      .promise
+      .then(() => console.log('PDF parsed'));
+  </script>
+</body>
+</html>

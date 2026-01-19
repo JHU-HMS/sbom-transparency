@@ -1,0 +1,314 @@
+\documentclass[conference,compsoc]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{svg}
+\usepackage{pgfplots}
+\usepackage{pgf-pie}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xurl} % This seems to fix issues with URLs running over columns (interesting this isn't default)
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{threeparttable}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily, showstringspaces=false,
+  commentstyle=\color{red},
+  keywordstyle=\color{gray}
+}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+\input{preamble} % Local definitions in here like colored notes
+
+\title{The SBOM Transparency v. Exposure Dilemma: A Case Study on\\Adversarial Access to Public SBOMs in Healthcare}
+
+\author{
+\IEEEauthorblockN{Jiarou Deng}
+\IEEEauthorblockA{
+\textit{Johns Hopkins University}\\
+Baltimore, MD, USA \\
+jdeng33@jh.edu}
+\and
+\IEEEauthorblockN{Yang Yang}
+\IEEEauthorblockA{
+\textit{Johns Hopkins University}\\
+Baltimore, MD, USA \\
+yyang296@jh.edu}
+\and
+\IEEEauthorblockN{Michael Rushanan}
+\IEEEauthorblockA{
+\textit{Harbor Labs}\\
+Pikesville, MD, USA \\
+%0009-0004-2822-8071}
+mike@harborlabs.com}
+% \and
+% \IEEEauthorblockN{4\textsuperscript{th} Given Name Surname}
+% \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+% \textit{name of organization (of Aff.)}\\
+% City, Country \\
+% email address or ORCID}
+% \and
+% \IEEEauthorblockN{5\textsuperscript{th} Given Name Surname}
+% \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+% \textit{name of organization (of Aff.)}\\
+% City, Country \\
+% email address or ORCID}
+% \and
+% \IEEEauthorblockN{6\textsuperscript{th} Given Name Surname}
+% \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+% \textit{name of organization (of Aff.)}\\
+% City, Country \\
+% email address or ORCID}
+}
+
+\maketitle
+
+\begin{abstract}
+The U.S. Food and Drug Administration (FDA) emphasizes the importance of cybersecurity transparency in ensuring the safety and effectiveness of medical devices. Specifically, the FDA recommends that manufacturers provide a continuously updated Software Bill of Materials (SBOM), for example, through a web portal, to support shared responsibility in cybersecurity risk management, vulnerability assessment, and mitigation. While we support this principle, we caution against the public release of SBOMs without first evaluating the potential risks introduced by adversarial access.
+
+In this paper, we present a case study using a de-identified, FDA-compliant SBOM derived from a real-world medical device. We extract known vulnerabilities (CVEs) from the SBOM and automatically generate an attack blueprint using a large language model (LLM). We validate this approach in a controlled containerized environment, demonstrating that even a minimally detailed SBOM can reduce adversary effort and streamline exploitation planning. And, we provide results that illustrate the risk of SBOM transparency, underscoring the need for rethinking public disclosure.
+\end{abstract}
+
+\begin{IEEEkeywords}
+SBOM, computer security, medical devices, supply chain, regulatory compliance, AI, LLM
+\end{IEEEkeywords}
+
+\section{Introduction}
+\label{sec:intro}
+The U.S. Food and Drug Administration (FDA) has significantly elevated the role of cybersecurity transparency in medical device regulation. As part of its 2025 premarket cybersecurity guidance, the FDA requires manufacturers to include a Software Bill of Materials (SBOM), which contains a list of the device's software components, as part of premarket submissions. The FDA also encourages the continued availability of SBOMs, potentially via public-facing mechanisms such as web portals~\cite{fda2025guidance}. This approach aligns with a broader push toward shared responsibility in managing software supply chain risk.
+
+Recent legislation further codifies this position. Amendments to Section 524B of the Federal Food, Drug, and Cosmetic Act, enacted through the Consolidated Appropriations Act, 2023, mandate that premarket submissions for moderate to high-risk medical devices include detailed cybersecurity information, including an SBOM that enumerates ``commercial, open-source, and off-the-shelf software components''~\cite{fdandcact}. These statutory changes also extend to postmarket expectations, requiring manufacturers to implement processes that ``provide a reasonable assurance that the device and related systems are cybersecure,'' including mechanisms for continuous monitoring, patching, and vulnerability mitigation.
+
+As a result, medical device manufacturers (MDMs) must produce and maintain SBOMs not only to gain regulatory approval but also to meet ongoing lifecycle obligations. Failure to comply may block market access. More critically, these SBOMs must be inclusive enough for MDMs to monitor their products for vulnerabilities. And they may be required to publicly, or, minimally, to a set of their users, release that inclusive information.
+
+Although this approach improves visibility and accountability, motivating shared responsibility among medical device stakeholders, including manufacturers, clinicians, hospital IT, and patients, it also raises a critical concern: \emph{Does making SBOMs public introduce new cybersecurity risks?}
+
+Even a minimally detailed SBOM can inadvertently reveal enough about a device's internal software architecture to accelerate attack planning. For example, let us assume that an attacker learns that a medical device comprises software that includes OpenSSL 1.0.1g. The attacker understands that the medical device establishes a TLS connection with a backend server via online user documentation. The attacker also knows that OpenSSL 1.0.1g is vulnerable to a TLS MITM attack via ChangeCipherSpec injection to derive a zero-length pre-master secret key, hijacking the session~\cite{cve20140224}. The attacker could then use an open source ChangeCipherSpec injection proof of concept, such as the one provided by Tripwire~\cite{tripwire_openssl_ccs}, to accelerate the development of their exploit.
+
+In this paper, we explore how attackers can misuse public SBOMs as input to their attack process. We analyze a de-identified, FDA-compliant SBOM from a real-world medical device and show how an attacker could use it to construct an attack blueprint via a semi-automated process using an LLM. By combining structured SBOM data with public vulnerability databases, we demonstrate that, using only regulatory disclosures, we can generate and validate practical attack plans. Our study underscores the tension between regulatory transparency and cybersecurity risk exposure and highlights the need for privacy-preserving mechanisms that protect SBOM contents without reducing their utility.
+
+\parhead{Contributions.}
+This paper makes the following contributions:
+\begin{itemize}
+    \item{Risk Framing for Public SBOMs: We highlight how regulatory pressure to increase SBOM transparency can inadvertently lower adversarial effort to develop exploits using a real-world, de-identified, and FDA-compliant SBOM.}
+    \item{Adversarial LLM Workflow: We develop a semi-automated process using open-source tools that parse SBOM components, extract known vulnerabilities or CVEs,\footnote{A CVE, or Common Vulnerabilities and Exposures, is a list of publicly disclosed vulnerabilities. When we refer to a CVE, we mean the vulnerability tied to a specific CVE ID.} and prompt an LLM to generate attack steps (i.e., a blueprint) against the listed vulnerabilities.}
+    \item{Controlled Exploitation Validation: We validate the LLM-generated attack steps in a containerized sandbox to assess attack feasibility.}
+    \item{Discussion of Mitigations: We reflect on how technologies such as zero-knowledge proofs (ZKPs) could help reconcile transparency with the need for confidentiality.}
+\end{itemize}
+
+\parhead{Paper Organization.} Section \ref{sec:background} reviews background and related work on supply chain, SBOMs, and LLMs. Section \ref{sec:casestudy} presents the case study setup, execution, and findings. Section \ref{sec:discussion} discusses results. And Section \ref{sec:conclusion} concludes with implications for stakeholders and future work.
+
+%Our findings highlight the unintended consequences of SBOM publication in healthcare environments. We conclude by advocating for privacy-preserving SBOM access mechanisms that balance regulatory transparency with the need to limit exploitability and describe our current work on one such mechanism.
+
+\section{Background and Related Work}
+\label{sec:background}
+The software supply chain is a growing attack surface, particularly in regulated domains like healthcare and medical devices. Modern software includes third-party libraries, open-source dependencies, and proprietary components, introducing complexity and potential vulnerabilities throughout the development lifecycle. Example software components with known vulnerabilities affecting medical devices, as alerted by the FDA~\cite{FDA_Cybersecurity_Alerts_2025}, include Swyentooth~\cite{FDA_SweynTooth_2020}, URGENT\/11~\cite{FDA_Urgent11_2019}, QNX RTOS\cite{qnx}, PTC Axeda Agent\cite{ptc}, and Apache Log4J\cite{log4j}.
+
+This section provides background on SBOMs as both a regulatory and technical tool for managing supply chain risk. We also provide background information on large language models (LLMs) and examine their application in developing attack strategies. Together, these topics frame how an attacker could use an SBOM to analyze a target's software composition and generate plausible attacks, as demonstrated in our case study.
+
+\subsection{Software Bill of Materials}
+An SBOM is generally an inventory of software components, their versions, and dependencies. MDMs use SBOMs to improve visibility into the software supply chain. In particular, SBOMs provide input to vulnerability monitoring and cybersecurity risk management by identifying components affected by new, publicly disclosed vulnerabilities. Regulatory agencies such as the U.S. Food and Drug Administration (FDA) now mandate the inclusion of SBOMs in premarket submissions for medical devices, based on attributes defined by the National Telecommunications and Information Administration (NTIA) \cite{ntiaNTIASBOMFraming2021, fda2025guidance}. These attributes include author name, timestamp, supplier name, component name, version string, component hash, unique identifier, relationship, and two additional FDA-specific fields: level of support and end-of-support date.\footnote{The FDA-specific fields level of support and end-of-support date may aid attackers in identifying legacy components that are no longer maintained---making them easier to exploit due to outdated defenses and evolving attack strategies.}
+
+\subsubsection{Generation}
+
+Several standardized formats have emerged to represent SBOMs, along with open and closed-source tools that can generate them in those formats. Regarding commonly-used formats, there is:
+
+\begin{itemize}
+    \item{CycloneDX\cite{cyclonedxstandard}, maintained by OWASP, is focused on application security and supports both JSON and XML formats. It integrates with security tools and emphasizes dependency and vulnerability tracking.}
+    \item{SPDX\cite{SPDX}, developed by the Linux Foundation, is widely used in open-source projects for its licensing metadata.}
+    \item{SWID tags\cite{swid}, defined by ISO/IEC 19770-2, are designed for enterprise software asset management.}
+\end{itemize}
+
+Generation tools work either statically, at build time, or dynamically at runtime. For example, an SBOM generation tool may hook a Makefile build process to determine linking information (e.g., Conan~\cite{conan}). In contrast, another tool may consume a text file that specifies the software's dependencies (e.g., Syft~\cite{syft}). 
+
+\subsubsection{Consumption and Analysis}
+Similar to SBOM generation, open and closed-source tools exist to consume SBOMs, providing vulnerability visibility and monitoring over time, as software inevitably becomes vulnerable. We discuss OWASP Dependency-Track (DT) \cite{dependencytrack}, an open-source vulnerability monitoring tool, as it is the one we used in our case study.
+
+DT consumes SBOMs in the CycloneDX format and matches components therein to vulnerabilities using databases such as the National Vulnerability NVD and OSS Index and identifies known vulnerabilities (e.g., CVEs). DT enables outputting vulnerability information in standardized formats to support downstream remediation and risk management workflows. This includes the Vulnerability Exploitability eXchange (VEX) format\cite{vex}, which conveys the status of vulnerabilities in a system---a vulnerable component is not necessarily an exploitable component.
+
+\subsubsection{Version Standardization} Component naming and versioning are not standardized across ecosystems, which can lead to lookup errors when attempting to correlate SBOM entries with known vulnerabilities. For example, Semantic Versioning or ``semver" is a set of rules and requirements that dictate how version numbers are assigned and incremented \cite {semver}. However, software developers, open source libraries, and programming languages are known to violate these rules.\footnote{We highlight this issue because it may impact our attack generation methodology, where an incorrectly identified software results in an incorrect or non-existent CVE match.}
+
+\subsubsection{Completeness and Correctness}
+The question of whether an SBOM lists all components and records accurate names and versions remains unresolved. Xiao et al. used JBomAudit to analyze over 25{,}000 Java SBOMs and found that more than half contained inconsistent entries, and about 31\% missing direct dependencies~\cite{xiaoJBomAuditAssessingLandscape2025}. Balliu et al. reviewed six Java SBOM tools and reported frequent version mismatches, missing fields, and namespace parsing errors~\cite{Balliu_2023}. In the Python ecosystem, Benedetti et al. show that SBOM generators allow vulnerability scanners to detect fewer than 20\% of known vulnerabilities~\cite{benedetti2024impactsbomgeneratorsvulnerability}, and Cofano et al. trace these issues to incomplete metadata, mishandled optional or remote dependencies, and inconsistent version resolution~\cite{cofano}.
+
+\subsection{Auto Generated Exploits}
+
+% Mike to add David Wagner research that built exploits from software patches.
+Academic research has shown that LLMs can autonomously craft functional software exploits once provided with context about a vulnerability. 
+
+For instance, Simsek et al. propose PoCGen, an exploit-generation pipeline that uses static analysis and iterative LLM prompting to pinpoint vulnerable entry points in code and generate an exploit payload. The authors report that their process worked for 77\% of known (trained) vulnerabilities and 39\% of 794 newly disclosed CVEs \cite{simsek2025pocgengeneratingproofofconceptexploits}.
+
+Fang et al. include an LLM in a programmatic loop that invokes disassemblers, debuggers, and HTTP fuzzers. The output of each tool is input into the LLM via a prompt. The result was an 87\% exploitation success rate for a known set of vulnerabilities~\cite{fang2024llmagentsautonomouslyexploit}.
+
+Lastly, Zhu et al. introduce a sandbox called CVE-Bench for evaluating AI agents against 40 critical Web-application CVEs. Their evaluation shows that the LLM agent exploited 13 \% of them in a true zero-day setting~\cite{zhu2025cvebenchbenchmarkaiagents}.
+
+% However, the public disclosure of SBOMs introduces a significant dilemma. On the one hand, transparency improves trust and allows customers and auditors to verify the security posture of software systems. On the other hand, openly listing all components may unintentionally assist adversarys by revealing outdated or vulnerable dependencies. A detailed SBOM could act as a “blueprint for attack”, allowing adversaries to target systems that run components with known exploits. This trade-off between security through transparency and risk of overexposure has become one of the most debated issues surrounding SBOM adoption.
+
+% Remove fbox for no border. Not sure whether I want to use it or not.
+\begin{figure*}[!t]
+    \centering
+    \includesvg[width=\textwidth]{case-study-workflow.drawio}
+    \caption{Workflow for SBOM-to-attack-blueprint and exploit validation.}
+    \label{fig:case-study-workflow}
+\end{figure*}
+
+\section{Case Study}
+\label{sec:casestudy}
+In this case study, we demonstrate how an adversary could leverage a real-world, FDA-compliant SBOM to identify vulnerable components and construct plausible attack strategies.\footnote{The SBOM we use was not made public. We making the assumption in our case study that it is to demonstrate the impact.} We develop a semi-automated workflow that extracts CVEs from the SBOM, prompts an LLM to generate step-by-step exploits, and validates them in a controlled environment.
+
+\subsection{Exposure Risk}
+Following the standard approach in medical device security literature, we can distinguish threats and adversaries based on their goals, capabilities, and relationship to the system~\cite{Rushanan:SoK:SP2014}. In the context of public SBOMs, this framing helps clarify how different actors may leverage transparency for malicious purposes.
+
+There exist both software security and privacy threats. Software threats include attackers that can alter the logic of the system by exploiting software vulnerabilities. Privacy threats include attackers using metadata and software information in SBOMs to determine how a device may function. 
+
+Regarding adversaries, we enumerate the following attacker categories composed of various ``users'' of the system: 
+
+\begin{itemize}
+    \item Insiders or semi-trusted users
+    \begin{itemize}
+        \item Access SBOMs embedded in manuals or support materials. 
+        \item Typically not malicious, these individuals can unintentionally expose sensitive information or use automation (e.g., LLM-assisted tooling) to explore attack vectors.
+        \item Hospital IT, clinicians, and patients are in this category.
+    \end{itemize}
+    \item Outsiders or opportunistic attackers
+    \begin{itemize}
+        \item Discover SBOMs through regulatory disclosures, vendor websites, or public repositories.
+        \item Access SBOMs to infer device architecture, security posture, or potential gaps for strategic advantage.
+        \item Scan for known vulnerabilities using open source tools such as DT and pair them with proof-of-concept exploits available on the Internet or generated via LLMs.
+        \item Hackers and competitors are in this category.
+    \end{itemize}
+\end{itemize}
+
+Given publicly available resources, open source tooling, and LLM availability, the capabilities of insiders or outsiders are similar, with the cost of the attack bounded by PC, SBOM, Internet, and LLM access. For example, an attacker with a Chromebook or Internet cafe access may access free LLM resources to start their attack.
+
+\subsection{Methodology}
+We provide the step-by-step methodology for our case study, presented in the order in which each step was carried out, including both automated and manual methods. We depict the workflow for our methodology in Figure~\ref{fig:case-study-workflow}, reading from left to right in the order of steps. We also provide the de-identified SBOM, source code, and LLM outputs for reproducibility in a public GitHub repository; see https://github.com/JHU-HMS/sbom-transparency.
+
+\subsubsection{SBOM Acquisition and Deidentification}
+We obtained a real-world, FDA-compliant SBOM for a medical device\footnote{The medical device is an FDA so-called Software as a Medical Device (SaMD) categorized as a cardiac device.} from a co-author affiliated with Harbor Labs. 
+
+The SBOM was JSON and adheres to the OWASP CycloneDX version 1.4 standard. To protect the confidentiality of the MDM and its product, we implemented a Python-based deidentification script. The script parses CycloneDX-formatted SBOMs, redacts manufacturer-identifying metadata (e.g., author, name, email, serial number, device type), removes selected components (e.g., proprietary package names), and updates all component references to avoid incomplete software-to-software references. Lastly, the script validates the resultant SBOM against its specification version and generates a new de-identified CycloneDX SBOM file---in JSON for our use.
+
+\subsubsection{Vulnerability Lookup}
+We conducted the CVE lookup using a locally hosted instance of OWASP DT running in a Docker container.
+
+We deployed the DT container from its standard distribution and verified that the service was operational. We then uploaded the de-identified SBOM via the DT web interface. The SBOM included standard attributes, including software name and version, and Package URLs (PURLs) and Common Platform Enumeration (CPE) identifiers. PURLs and CPEs are standardized identifiers and forms for identifying software components, and DT leverages them to look up known vulnerabilities.
+
+DT automatically parsed the SBOM and used PURLs and CPEs to query public vulnerability sources (e.g., NVD and OSS Index), returning matches between SBOM components and published CVEs. We then used DT to export vulnerability information in multiple formats, including VEX.
+   
+\subsubsection{LLM-Driven Attack Blueprinting}
+We prioritized vulnerabilities with a High or Critical severity rating for further analysis, as these present the most severe consequences if exploited. This step reduced the set of candidate vulnerabilities from the initial DT vulnerability output from 45 to 13 entries. 
+Each retained CVE was processed individually using OpenAI's ChatGPT o3 model. We chose ChatGPT model o3 because its multi-step reasoning reliably extracts and structures exploit paths. 
+
+To promote consistent and reproducible results, we employed a predefined prompt structure for all queries. This prompt incorporated the specific SBOM entry, including the software name and version, as well as the corresponding NVD summary. It directed the model to generate a vulnerable environment configuration compatible with Kali Linux, propose an exploitation strategy with step-by-step instructions, and provide a success criterion, or ``oracle," to verify the exploit. 
+
+\subsubsection{Attack Blueprint and Exploit Validation}
+We manually validated all LLM-generated attack blueprints. First, we determined whether the attack steps made sense technically (e.g., did not include hallucinated output like made-up tools). Then, upon determining whether the blueprint was technically correct, we used the LLM-generated Dockerfile to construct a sandbox that replicated the vulnerable environment (i.e., running a contained vulnerable software component). On successfully running the container, we executed the LLM-generated exploit.
+
+We determine whether validation is successful by whether we can assert that the exploit succeeded or failed. For example, validation may fail if the Docker container fails to build. For successful validations that have failed exploits, we used outputs such as logs, warnings, or errors to inform the LLM and refine the blueprint and exploit payloads. To further refine, we logged at most five additional prompts.
+
+\begin{table*}[t]
+\centering
+\renewcommand{\arraystretch}{1.2} % Add vertical padding
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l l l l l l l l l l l}
+\hline
+\textbf{CVE} & 
+\textbf{Successful Exploit} & 
+\textbf{Severity} & 
+\textbf{AV} & 
+\textbf{AC} & 
+\textbf{PR} & 
+\textbf{UI} & 
+\textbf{S} & 
+\textbf{C} & 
+\textbf{I} & 
+\textbf{A} \\
+\hline
+CVE-2023-46308 & No (22.2\%) & Critical (11.1\%) & N (77.8\%) & L (100\%) & N (77.8\%) & N (77.8\%) & U (88.9\%) & H (44.4\%) & H (44.4\%) & H (44.4\%) \\
+CVE-2023-48631 & Yes (77.8\%) & High (88.9\%) & N & L & N & N & U & N (44.4\%) & N (55.6\%) & L (22.2\%) \\
+CVE-2024-4367 & No & High & N & L & N & R (22.2\%) & U & H & H & H \\
+CVE-2022-25883 & Yes & High & N & L & N & N & U & N & N & L \\
+CVE-2023-45133 & Yes & High & L (22.2\%) & L & L (11.1\%) & N & C (11.1\%) & H & H & H \\
+CVE-2024-23331 & Yes & High & N & L & N & N & U & L (11.1\%) & N & N (33.3\%) \\
+CVE-2023-34092 & Yes & High & N & L & N & N & U & H & N & N \\
+CVE-2023-26115 & Yes & High & N & L & N & N & U & N & N & H \\
+CVE-2023-30533 & Yes & High & L & L & N & R & U & H & H & H \\
+\hline
+\end{tabular}%
+}
+\caption{CVEs analyzed in the case study with exploit success, severity, and CVSS 3.1 base metrics. Percentages give the share of CVEs with that value and are shown only on the first occurrence per CVSS column (AV, AC, PR, UI, S, C/I/A).}
+\label{tab:sbom-results}
+\end{table*}
+
+\subsection{Results}
+Our case study demonstrates the feasibility of using an SBOM to create an attack blueprint. The results presented here validate our premise that SBOM exposure represents a serious cybersecurity risk for medical devices, as it enables adversaries to move rapidly from component enumeration to working attack blueprints. In this section, we present our findings, beginning with the composition and filtering of the vulnerability dataset, followed by an assessment of adversarial capability in light of resource requirements.
+
+\subsubsection{SBOM and Vulnerabilities}
+DT identified 45 CVEs in total. We filtered for vulnerabilities with High and Critical severity, reducing the set to 13. We then excluded one CVE for which the NVD entry indicated ``Unaffected," and another CVE that, on manual review, lacked sufficient detail from the NVD entry to test it.
+
+The remaining nine vulnerabilities included prototype pollution, denial-of-service (DoS), cross-site scripting (XSS), insecure file handling, and remote code execution. \emph{We successfully exploited 7 of 9 (77.8\%) using our validation methodology}. Table~\ref{tab:sbom-results} lists our results by CVE ID.
+
+As an example, we provide a code snippet we generated to exploit CVE-2022-25883 in Listing 1. The curl command uses a crafted JSON payload to exploit a regex engine flaw, resulting in near-exponential processing time. 
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    columns=fullflexible,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\begin{lstlisting}[language=bash, captionpos=b, caption={Running DoS exploit.}]
+$ # benign.json: {"range": ">=1.0.0 <2.0.0"}
+$ time curl --data-binary @benign.json http://localhost:3000/check
+{"ok":true}
+real    0m0.010s
+$ # payload.json: {"range": ">=
+$ time curl --data-binary @payload.json http://localhost:3000/check
+{"ok":true}
+real    0m10.722s
+\end{lstlisting}
+
+\subsubsection{Adversarial Model and Capability}
+We empirically found that each exploit cycle required approximately 10-30 minutes of analyst time, consisting of roughly three minutes for prompt construction, 5-25 minutes for validation, and two minutes for container deployment. 
+
+Required hardware and other costs included a single Microsoft Windows laptop, Internet connection, and ChatGPT Plus subscription. We determined that the total compute cost per CVE using ChatGPT was less than \$.20.  
+
+\section{Discussion}
+\label{sec:discussion}
+Our case study demonstrates that an FDA-compliant SBOM can be used by attackers for exploitation planning. We achieved a 77\% exploitation success rate in a controlled setting, underscoring that SBOM transparency, while critical for regulatory compliance and collaborative vulnerability management, comes with serious risk as it lowers the barrier to functional exploit development.
+
+The central challenge, then, is determining whether we can preserve the cybersecurity benefits of SBOM transparency without exposing the complete manifest. Full disclosure enables regulators, customers, and defenders to verify security posture, but it also equips attackers with precise component data, facilitating automated vulnerability mapping and attack blueprinting.
+
+This tension defines the transparency-versus-exposure dilemma.
+
+We propose ZKPs as a viable cryptographic approach to reconcile these competing goals. ZKPs allow an MDM or an SBOM provider to prove compliance with regulatory or contractual requirements—such as “no listed component has an active High or Critical CVE”—without revealing the underlying SBOM contents. In effect, they enable verifiable security attestations that preserve confidentiality.
+
+In a high-level SBOM workflow, we reason that an MDM would generate the SBOM, perform vulnerability analysis, and construct a ZKP attesting that the manifest satisfies a given security policy. The proof could confirm the absence of exploitable components, validate that all software is within support, or certify that patches are applied within required timelines. The verifier, whether a regulator, customer, or independent auditor, could check the proof without ever seeing sensitive supply chain details. This model prevents targeted vulnerability reconnaissance, impedes LLM-assisted exploit generation, and safeguards proprietary architectural information.
+
+\parhead{Future Work} We are actively developing and evaluating a ZKP-based SBOM attestation framework. Our objective is to demonstrate that SBOM compliance can be independently verified while significantly reducing the exposure risks we have highlighted. If successful, this approach may offer a practical path toward resolving the SBOM transparency v. exposure dilemma in medical device cybersecurity.
+
+\section{Conclusion}
+\label{sec:conclusion}
+This work demonstrates that even de-identified, FDA-compliant SBOMs can reduce adversarial effort to develop exploits when paired with public vulnerability data and LLM-assisted exploit generation. Our case study quantified this risk, highlighting that regulatory transparency, while essential for shared cybersecurity responsibility, can inadvertently facilitate attack blueprinting. We argue that the SBOM transparency v. exposure dilemma demands privacy-preserving solutions. 
+ZKPs offer a promising path by enabling verifiable security attestations without disclosing sensitive component details. We are pursuing a ZKP-based SBOM validation framework to reconcile these competing imperatives and strengthen medical device cybersecurity against emerging automated exploitation capabilities.
+
+\section*{Acknowledgments}
+
+We thank Nick Yuran and Luis Vargas of Harbor Labs for their support and help in analyzing the original SBOM, and the reviewers for their feedback and guidance.
+
+\bibliographystyle{IEEEtran}
+\bibliography{health_sec.bib}
+
+\end{document}

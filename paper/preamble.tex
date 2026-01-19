@@ -1,0 +1,8 @@
+% Defintions for color notes and other info
+\newcommand{\needcite}{{\color{red}[{\bf Citation needed.}]\PackageWarning{preamble}{Citation needed}}}
+\newcommand{\colornote}[3]{{\color{#2}{[{\bf #1}: #3]}}\PackageWarning{preamble}{Outstanding note from #1}}
+\newcommand{\reviewtag}[1]{{\color{red}{[{\bf #1}]}}}
+\newcommand{\parhead}[1]{\smallskip\noindent\textbf{#1}}
+\newcommand{\mike}[1]{\colornote{Mike}{Plum}{#1}}
+\newcommand{\mandy}[1]{\textcolor{Bittersweet}{[\textbf{Mandy:} #1]}}
+\newcommand{\jiarou}[1]{\colornote{Jiarou}{Blue}{#1}}

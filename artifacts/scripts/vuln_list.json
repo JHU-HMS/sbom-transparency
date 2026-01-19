@@ -1,0 +1,272 @@
+[
+  {
+    "cve": "CVE-2023-45857",
+    "severity": "MEDIUM",
+    "name": "axios",
+    "version": "0.27.2"
+  },
+  {
+    "cve": "CVE-2025-5889",
+    "severity": "UNASSIGNED",
+    "name": "brace-expansion",
+    "version": "1.1.11"
+  },
+  {
+    "cve": "CVE-2024-4068",
+    "severity": "UNASSIGNED",
+    "name": "braces",
+    "version": "3.0.2"
+  },
+  {
+    "cve": "CVE-2024-21538",
+    "severity": "UNASSIGNED",
+    "name": "cross-spawn",
+    "version": "7.0.3"
+  },
+  {
+    "cve": "CVE-2023-26364",
+    "severity": "UNASSIGNED",
+    "name": "css-tools",
+    "version": "4.2.0"
+  },
+  {
+    "cve": "CVE-2023-48631",
+    "severity": "HIGH",
+    "name": "css-tools",
+    "version": "4.2.0"
+  },
+  {
+    "cve": "CVE-2024-27088",
+    "severity": "MEDIUM",
+    "name": "es5-ext",
+    "version": "0.10.62"
+  },
+  {
+    "cve": "CVE-2024-39008",
+    "severity": "UNASSIGNED",
+    "name": "fast-loops",
+    "version": "1.1.3"
+  },
+  {
+    "cve": "CVE-2024-28849",
+    "severity": "UNASSIGNED",
+    "name": "follow-redirects",
+    "version": "1.15.2"
+  },
+  {
+    "cve": "CVE-2023-26159",
+    "severity": "MEDIUM",
+    "name": "follow-redirects",
+    "version": "1.15.2"
+  },
+  {
+    "cve": "CVE-2025-7783",
+    "severity": "UNASSIGNED",
+    "name": "form-data",
+    "version": "4.0.0"
+  },
+  {
+    "cve": "CVE-2025-27789",
+    "severity": "UNASSIGNED",
+    "name": "helpers",
+    "version": "7.21.0"
+  },
+  {
+    "cve": "CVE-2025-29907",
+    "severity": "UNASSIGNED",
+    "name": "jspdf",
+    "version": "2.5.1"
+  },
+  {
+    "cve": "CVE-2024-4067",
+    "severity": "UNASSIGNED",
+    "name": "micromatch",
+    "version": "4.0.5"
+  },
+  {
+    "cve": "CVE-2024-55565",
+    "severity": "UNASSIGNED",
+    "name": "nanoid",
+    "version": "3.3.4"
+  },
+  {
+    "cve": "CVE-2024-55565",
+    "severity": "UNASSIGNED",
+    "name": "nanoid",
+    "version": "3.3.6"
+  },
+  {
+    "cve": "CVE-2024-4367",
+    "severity": "HIGH",
+    "name": "pdfjs-dist",
+    "version": "2.16.105"
+  },
+  {
+    "cve": "CVE-2023-46308",
+    "severity": "CRITICAL",
+    "name": "plotly.js",
+    "version": "2.18.2"
+  },
+  {
+    "cve": "CVE-2023-44270",
+    "severity": "MEDIUM",
+    "name": "postcss",
+    "version": "8.4.21"
+  },
+  {
+    "cve": "CVE-2023-44270",
+    "severity": "MEDIUM",
+    "name": "postcss",
+    "version": "8.4.24"
+  },
+  {
+    "cve": "CVE-2024-26467",
+    "severity": "UNASSIGNED",
+    "name": "railroad-diagrams",
+    "version": "1.0.0"
+  },
+  {
+    "cve": "CVE-2024-47068",
+    "severity": "MEDIUM",
+    "name": "rollup",
+    "version": "3.18.0"
+  },
+  {
+    "cve": "CVE-2025-27789",
+    "severity": "UNASSIGNED",
+    "name": "runtime",
+    "version": "7.21.0"
+  },
+  {
+    "cve": "CVE-2025-27789",
+    "severity": "UNASSIGNED",
+    "name": "runtime",
+    "version": "7.22.6"
+  },
+  {
+    "cve": "CVE-2025-27789",
+    "severity": "UNASSIGNED",
+    "name": "runtime-corejs3",
+    "version": "7.21.0"
+  },
+  {
+    "cve": "CVE-2022-25883",
+    "severity": "HIGH",
+    "name": "semver",
+    "version": "5.7.1"
+  },
+  {
+    "cve": "CVE-2022-25883",
+    "severity": "HIGH",
+    "name": "semver",
+    "version": "6.3.0"
+  },
+  {
+    "cve": "CVE-2022-25883",
+    "severity": "HIGH",
+    "name": "semver",
+    "version": "7.3.8"
+  },
+  {
+    "cve": "CVE-2023-32695",
+    "severity": "HIGH",
+    "name": "socket.io-parser",
+    "version": "3.3.3"
+  },
+  {
+    "cve": "CVE-2023-45133",
+    "severity": "HIGH",
+    "name": "traverse",
+    "version": "7.21.2"
+  },
+  {
+    "cve": "CVE-2023-45133",
+    "severity": "HIGH",
+    "name": "traverse",
+    "version": "7.22.6"
+  },
+  {
+    "cve": "CVE-2024-31207",
+    "severity": "UNASSIGNED",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2024-45812",
+    "severity": "UNASSIGNED",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2024-45811",
+    "severity": "UNASSIGNED",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2025-46565",
+    "severity": "UNASSIGNED",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2025-31486",
+    "severity": "UNASSIGNED",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2025-32395",
+    "severity": "UNASSIGNED",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2025-24010",
+    "severity": "UNASSIGNED",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2024-23331",
+    "severity": "HIGH",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2023-34092",
+    "severity": "HIGH",
+    "name": "vite",
+    "version": "4.1.4"
+  },
+  {
+    "cve": "CVE-2023-26115",
+    "severity": "HIGH",
+    "name": "word-wrap",
+    "version": "1.2.3"
+  },
+  {
+    "cve": "CVE-2024-37890",
+    "severity": "UNASSIGNED",
+    "name": "ws",
+    "version": "7.4.6"
+  },
+  {
+    "cve": "CVE-2024-37890",
+    "severity": "UNASSIGNED",
+    "name": "ws",
+    "version": "8.13.0"
+  },
+  {
+    "cve": "CVE-2024-22363",
+    "severity": "UNASSIGNED",
+    "name": "xlsx",
+    "version": "0.18.5"
+  },
+  {
+    "cve": "CVE-2023-30533",
+    "severity": "HIGH",
+    "name": "xlsx",
+    "version": "0.18.5"
+  }
+]
